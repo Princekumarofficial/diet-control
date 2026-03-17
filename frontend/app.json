@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "Belly & Bicep Coach",
+    "slug": "belly-bicep-coach",
+    "description": "AI-powered fitness and nutrition coach for meal logging, recovery, and personalized targets.",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "bellybicepcoach",
     "userInterfaceStyle": "automatic",
     "splash": {
       "image": "./assets/images/splash-icon.png",
@@ -13,7 +14,9 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.xprin.bellybicepcoach",
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +27,9 @@
       },
       "predictiveBackGestureEnabled": false,
       "softwareKeyboardLayoutMode": "resize",
-      "package": "com.anonymous.frontend"
+      "usesCleartextTraffic": true,
+      "package": "com.xprin.bellybicepcoach",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",

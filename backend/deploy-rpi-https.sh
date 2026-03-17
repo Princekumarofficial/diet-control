@@ -29,19 +29,23 @@ if [ ! -f ./nginx/certs/server.crt ] || [ ! -f ./nginx/certs/server.key ]; then
   exit 1
 fi
 
-echo "[1/5] Building backend image..."
+echo "[1/6] Cleaning previous deployment cache..."
+docker compose -f "$COMPOSE_FILE" down --remove-orphans || true
+docker builder prune -f
+
+echo "[2/6] Building backend image..."
 docker compose -f "$COMPOSE_FILE" build
 
-echo "[2/5] Running database migrations..."
+echo "[3/6] Running database migrations..."
 docker compose -f "$COMPOSE_FILE" run --rm backend python manage.py migrate
 
-echo "[3/5] Running Django system checks..."
+echo "[4/6] Running Django system checks..."
 docker compose -f "$COMPOSE_FILE" run --rm backend python manage.py check
 
-echo "[4/5] Starting backend + nginx (HTTPS)..."
+echo "[5/6] Starting backend + nginx (HTTPS)..."
 docker compose -f "$COMPOSE_FILE" up -d
 
-echo "[5/5] Current service status"
+echo "[6/6] Current service status"
 docker compose -f "$COMPOSE_FILE" ps
 
 echo
