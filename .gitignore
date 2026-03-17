@@ -1,0 +1,37 @@
+# Workspace
+.vscode/
+.cursor/
+
+# Python backend
+backend/.venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/db.sqlite3
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Frontend
+frontend/node_modules/
+frontend/.expo/
+frontend/dist/
+frontend/web-build/
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
+
+# Native/build artifacts
+frontend/android/.gradle/
+frontend/android/app/build/
+
+# Credentials / certs
+backend/nginx/certs/*.crt
+backend/nginx/certs/*.key
+backend/nginx/certs/*.pem
+backend/nginx/certs/*.p12
+backend/nginx/certs/*.pfx
+!backend/nginx/certs/.gitkeep
+
+# OS
+.DS_Store
+Thumbs.db
