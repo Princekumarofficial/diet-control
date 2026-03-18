@@ -8,7 +8,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-$projectDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$projectDir = Split-Path -Parent $scriptDir
 $androidDir = Join-Path $projectDir "android"
 $gradleWrapper = Join-Path $androidDir "gradlew.bat"
 
@@ -157,7 +158,8 @@ try {
         if ($UseCi -or ($hasLockfile -and -not $hasNodeModules)) {
             Write-Host "Installing JS dependencies with npm ci..." -ForegroundColor Cyan
             Invoke-ExternalCommand -FilePath "npm" -Arguments @("ci") -Description "npm ci"
-        } else {
+        }
+        else {
             Write-Host "Installing JS dependencies with npm install..." -ForegroundColor Cyan
             Invoke-ExternalCommand -FilePath "npm" -Arguments @("install") -Description "npm install"
         }
