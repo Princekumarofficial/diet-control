@@ -4,7 +4,24 @@ set -euo pipefail
 TARGET="${1:-release-apk}"
 SKIP_INSTALL="${SKIP_INSTALL:-0}"
 PULL_LATEST="${PULL_LATEST:-0}"
-PLATFORM="${PLATFORM:-linux/amd64}"
+ARCH="$(uname -m)"
+
+if [ -n "${PLATFORM:-}" ]; then
+  EFFECTIVE_PLATFORM="$PLATFORM"
+elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+  EFFECTIVE_PLATFORM="linux/arm64"
+else
+  EFFECTIVE_PLATFORM="linux/amd64"
+fi
+
+if [ -n "${IMAGE:-}" ]; then
+  EFFECTIVE_IMAGE="$IMAGE"
+elif [ "$EFFECTIVE_PLATFORM" = "linux/arm64" ]; then
+  # reactnativecommunity/react-native-android is amd64-only; use multi-arch image on ARM hosts.
+  EFFECTIVE_IMAGE="ghcr.io/cirruslabs/android-sdk:35"
+else
+  EFFECTIVE_IMAGE="reactnativecommunity/react-native-android:latest"
+fi
 
 case "$TARGET" in
   release-apk) GRADLE_TASK="assembleRelease"; ARTIFACT="android/app/build/outputs/apk/release/app-release.apk" ;;
@@ -35,10 +52,9 @@ if ! docker info >/dev/null 2>&1; then
   exit 1
 fi
 
-IMAGE="reactnativecommunity/react-native-android:latest"
 if [ "$PULL_LATEST" = "1" ]; then
-  echo "Pulling latest build image: $IMAGE"
-  docker pull "$IMAGE"
+  echo "Pulling latest build image: $EFFECTIVE_IMAGE"
+  docker pull --platform "$EFFECTIVE_PLATFORM" "$EFFECTIVE_IMAGE"
 fi
 
 INSTALL_CMD="if [ -f package-lock.json ]; then npm ci; else npm install; fi"
@@ -49,17 +65,19 @@ fi
 CONTAINER_CMD="$INSTALL_CMD && cd android && ./gradlew $GRADLE_TASK"
 
 echo "Starting Dockerized Android build: $TARGET"
-echo "Using container platform: $PLATFORM"
+echo "Detected host architecture: $ARCH"
+echo "Using container platform: $EFFECTIVE_PLATFORM"
+echo "Using container image: $EFFECTIVE_IMAGE"
 echo "Using persistent Docker volumes for npm and Gradle cache."
 
 docker run --rm -t \
-  --platform "$PLATFORM" \
+  --platform "$EFFECTIVE_PLATFORM" \
   -v "$PROJECT_DIR:/workspace" \
   -v dietapp_frontend_node_modules:/workspace/node_modules \
   -v dietapp_frontend_gradle:/home/node/.gradle \
   -v dietapp_frontend_npm:/home/node/.npm \
   -w /workspace \
-  "$IMAGE" \
+  "$EFFECTIVE_IMAGE" \
   bash -lc "$CONTAINER_CMD"
 
 if [ -f "$PROJECT_DIR/$ARTIFACT" ]; then
