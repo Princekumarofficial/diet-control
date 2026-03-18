@@ -7,7 +7,7 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://ozie-railwayed-intervertebrally.ngrok-free.dev",
+        "EXPO_PUBLIC_API_URL": "https://ozie-railwayed-intervertebrally.ngrok-free.dev",
         "EXPO_PUBLIC_API_URL_FALLBACKS": "http://10.14.19.34"
       },
       "android": {
@@ -16,7 +16,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://ozie-railwayed-intervertebrally.ngrok-free.dev",
+        "EXPO_PUBLIC_API_URL": "https://ozie-railwayed-intervertebrally.ngrok-free.dev",
         "EXPO_PUBLIC_API_URL_FALLBACKS": "http://10.14.19.34"
       },
       "android": {

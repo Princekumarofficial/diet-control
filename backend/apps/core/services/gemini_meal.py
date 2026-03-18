@@ -203,7 +203,7 @@ def analyze_meal_image(*, image_bytes: bytes, mime_type: str, user_notes: str) -
     # Try with JSON schema first (preferred method)
     try:
         resp = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model="gemini-3.1-flash-lite-preview",
             contents=[
                 prompt,
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
@@ -218,7 +218,7 @@ def analyze_meal_image(*, image_bytes: bytes, mime_type: str, user_notes: str) -
         import sys
         print(f"[DEBUG] First attempt failed: {e}", file=sys.stderr)
         resp = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model="gemini-3.1-flash-lite-preview",
             contents=[
                 prompt,
                 types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
@@ -274,7 +274,7 @@ def analyze_meal_text(*, raw_input_text: str, user_notes: str) -> MealAnalysis:
 
     try:
         resp = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model="gemini-3.1-flash-lite-preview",
             contents=[prompt, f"MEAL TEXT INPUT: {meal_text}"],
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
@@ -283,7 +283,7 @@ def analyze_meal_text(*, raw_input_text: str, user_notes: str) -> MealAnalysis:
         )
     except Exception:
         resp = client.models.generate_content(
-            model="gemini-3.1-flash-lite",
+            model="gemini-3.1-flash-lite-preview",
             contents=[prompt, f"MEAL TEXT INPUT: {meal_text}"],
             config=types.GenerateContentConfig(response_mime_type="application/json"),
         )
