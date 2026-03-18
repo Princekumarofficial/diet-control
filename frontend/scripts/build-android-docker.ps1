@@ -2,7 +2,8 @@ param(
     [ValidateSet("release-apk", "release-aab", "debug-apk")]
     [string]$Target = "release-apk",
     [switch]$SkipInstall,
-    [switch]$PullLatest
+    [switch]$PullLatest,
+    [string]$Platform = "linux/amd64"
 )
 
 $ErrorActionPreference = "Stop"
@@ -59,6 +60,7 @@ $installCmd = if ($SkipInstall) { "echo 'Skipping npm install'" } else { "if [ -
 $containerCmd = "$installCmd && cd android && ./gradlew $gradleTask"
 
 Write-Host "Starting Dockerized Android build: $Target" -ForegroundColor Cyan
+Write-Host "Using container platform: $Platform" -ForegroundColor Cyan
 Write-Host "This uses isolated toolchains and persistent caches for faster repeat builds." -ForegroundColor Cyan
 
 $projectDirUnix = $projectDir -replace '\\', '/'
@@ -69,6 +71,7 @@ if ($projectDirUnix -match '^[A-Za-z]:/') {
 
 $dockerArgs = @(
     "run", "--rm", "-t",
+    "--platform", $Platform,
     "-v", "${projectDirUnix}:/workspace",
     "-v", "dietapp_frontend_node_modules:/workspace/node_modules",
     "-v", "dietapp_frontend_gradle:/home/node/.gradle",

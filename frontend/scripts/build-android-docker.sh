@@ -4,6 +4,7 @@ set -euo pipefail
 TARGET="${1:-release-apk}"
 SKIP_INSTALL="${SKIP_INSTALL:-0}"
 PULL_LATEST="${PULL_LATEST:-0}"
+PLATFORM="${PLATFORM:-linux/amd64}"
 
 case "$TARGET" in
   release-apk) GRADLE_TASK="assembleRelease"; ARTIFACT="android/app/build/outputs/apk/release/app-release.apk" ;;
@@ -48,9 +49,11 @@ fi
 CONTAINER_CMD="$INSTALL_CMD && cd android && ./gradlew $GRADLE_TASK"
 
 echo "Starting Dockerized Android build: $TARGET"
+echo "Using container platform: $PLATFORM"
 echo "Using persistent Docker volumes for npm and Gradle cache."
 
 docker run --rm -t \
+  --platform "$PLATFORM" \
   -v "$PROJECT_DIR:/workspace" \
   -v dietapp_frontend_node_modules:/workspace/node_modules \
   -v dietapp_frontend_gradle:/home/node/.gradle \
