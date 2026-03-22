@@ -7,7 +7,7 @@ type AuthContextValue = {
   token: string | null;
   isAuthLoading: boolean;
   isAuthenticated: boolean;
-  setToken: (token: string | null) => void;
+  setToken: (token: string | null) => Promise<void>;
   logout: () => void;
 };
 

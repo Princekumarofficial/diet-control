@@ -39,8 +39,16 @@ type BodyFatEstimateResponse =
   | { status: 'success'; body_fat_percent: number; profile: Profile }
   | { status: 'error'; message: string };
 
+type ChangePasswordResponse =
+  | { status: 'success'; token: string }
+  | { status: 'error'; message: string };
+
+type DeleteAccountResponse =
+  | { status: 'success'; message: string }
+  | { status: 'error'; message: string };
+
 export default function ProfileModalScreen() {
-  const { logout } = useAuth();
+  const { logout, setToken } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [targets, setTargets] = useState<Targets | null>(null);
 
@@ -49,11 +57,19 @@ export default function ProfileModalScreen() {
   const [ageInput, setAgeInput] = useState('22');
   const [deficitInput, setDeficitInput] = useState('400');
   const [geminiKeyInput, setGeminiKeyInput] = useState('');
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newPasswordInput, setNewPasswordInput] = useState('');
+  const [confirmNewPasswordInput, setConfirmNewPasswordInput] = useState('');
+  const [deletePasswordInput, setDeletePasswordInput] = useState('');
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isEstimating, setIsEstimating] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
 
   const hydrateInputs = useCallback((p: Profile) => {
     setHeightInput(p.height_cm === null ? '' : String(p.height_cm));
@@ -66,6 +82,7 @@ export default function ProfileModalScreen() {
   const loadProfile = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setInfo(null);
     try {
       const res = await apiFetch('/api/v1/profile/');
       const json = (await res.json()) as ProfileResponse;
@@ -93,6 +110,7 @@ export default function ProfileModalScreen() {
     if (!profile || isSaving) return;
     setIsSaving(true);
     setError(null);
+    setInfo(null);
 
     try {
       const ageValue = Number(ageInput);
@@ -138,6 +156,7 @@ export default function ProfileModalScreen() {
         setProfile(json.profile);
         setTargets(json.targets);
         hydrateInputs(json.profile);
+        setInfo('Profile updated successfully.');
       } else {
         setError(json.status === 'error' ? json.message : 'Failed to save profile.');
       }
@@ -152,6 +171,7 @@ export default function ProfileModalScreen() {
     if (isEstimating) return;
 
     setError(null);
+    setInfo(null);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (permission.status !== 'granted') {
       setError('Media library permission denied.');
@@ -192,6 +212,7 @@ export default function ProfileModalScreen() {
         if (profile) {
           setProfile({ ...profile, body_fat_percent: json.body_fat_percent });
         }
+        setInfo('Body fat estimate updated.');
       } else {
         setError(json.status === 'error' ? json.message : 'Body fat estimation failed.');
       }
@@ -210,6 +231,90 @@ export default function ProfileModalScreen() {
     }
     logout();
     router.replace('/auth');
+  }
+
+  async function changePassword() {
+    if (isChangingPassword) return;
+    setError(null);
+    setInfo(null);
+
+    if (!currentPasswordInput || !newPasswordInput || !confirmNewPasswordInput) {
+      setError('Please fill current password, new password, and confirm password.');
+      return;
+    }
+
+    if (newPasswordInput.length < 8) {
+      setError('New password must be at least 8 characters.');
+      return;
+    }
+
+    if (newPasswordInput !== confirmNewPasswordInput) {
+      setError('New password and confirm password do not match.');
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await apiFetch('/api/v1/auth/change-password/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          current_password: currentPasswordInput,
+          new_password: newPasswordInput,
+        }),
+      });
+      const json = (await res.json()) as ChangePasswordResponse;
+      if (res.ok && json.status === 'success') {
+        await setToken(json.token);
+        setCurrentPasswordInput('');
+        setNewPasswordInput('');
+        setConfirmNewPasswordInput('');
+        setInfo('Password changed successfully.');
+      } else {
+        setError(json.status === 'error' ? json.message : 'Failed to change password.');
+      }
+    } catch (e: any) {
+      setError(e?.message ?? 'Unexpected error.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  }
+
+  async function deleteAccount() {
+    if (isDeletingAccount) return;
+    setError(null);
+    setInfo(null);
+
+    if (!deletePasswordInput) {
+      setError('Please enter password to delete account.');
+      return;
+    }
+
+    if (deleteConfirmInput.trim().toUpperCase() !== 'DELETE') {
+      setError('Type DELETE to confirm account deletion.');
+      return;
+    }
+
+    setIsDeletingAccount(true);
+    try {
+      const res = await apiFetch('/api/v1/auth/delete-account/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deletePasswordInput }),
+      });
+      const json = (await res.json()) as DeleteAccountResponse;
+      if (res.ok && json.status === 'success') {
+        await setToken(null);
+        logout();
+        router.replace('/auth');
+      } else {
+        setError(json.status === 'error' ? json.message : 'Failed to delete account.');
+      }
+    } catch (e: any) {
+      setError(e?.message ?? 'Unexpected error.');
+    } finally {
+      setIsDeletingAccount(false);
+    }
   }
 
   return (
@@ -400,6 +505,12 @@ export default function ProfileModalScreen() {
           </View>
         ) : null}
 
+        {info ? (
+          <View style={{ borderRadius: 12, padding: 12, marginBottom: 14, backgroundColor: 'rgba(50,215,75,0.16)' }}>
+            <Text style={{ color: '#9AFAB0' }}>{info}</Text>
+          </View>
+        ) : null}
+
         <Pressable
           onPress={saveProfile}
           disabled={!canSave}
@@ -423,6 +534,87 @@ export default function ProfileModalScreen() {
           })}>
           <Text style={{ color: '#FF9A95', textAlign: 'center', fontWeight: '800' }}>Sign Out</Text>
         </Pressable>
+
+        <View style={{ marginTop: 18, borderRadius: 14, padding: 14, backgroundColor: 'rgba(255,255,255,0.05)' }}>
+          <Text style={{ color: '#fff', fontWeight: '800', marginBottom: 8 }}>Change Password</Text>
+          <View style={{ gap: 10 }}>
+            <TextInput
+              value={currentPasswordInput}
+              onChangeText={setCurrentPasswordInput}
+              secureTextEntry
+              placeholder="Current password"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
+            />
+            <TextInput
+              value={newPasswordInput}
+              onChangeText={setNewPasswordInput}
+              secureTextEntry
+              placeholder="New password"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
+            />
+            <TextInput
+              value={confirmNewPasswordInput}
+              onChangeText={setConfirmNewPasswordInput}
+              secureTextEntry
+              placeholder="Confirm new password"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
+            />
+            <Pressable
+              onPress={changePassword}
+              disabled={isChangingPassword}
+              style={({ pressed }) => ({
+                borderRadius: 12,
+                paddingVertical: 12,
+                backgroundColor: isChangingPassword ? 'rgba(255,255,255,0.1)' : 'rgba(10,132,255,0.2)',
+                opacity: pressed ? 0.75 : 1,
+              })}>
+              <Text style={{ color: '#9DD1FF', textAlign: 'center', fontWeight: '800' }}>
+                {isChangingPassword ? 'Updating...' : 'Update Password'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={{ marginTop: 14, borderRadius: 14, padding: 14, backgroundColor: 'rgba(255,69,58,0.12)', borderWidth: 1, borderColor: 'rgba(255,69,58,0.25)' }}>
+          <Text style={{ color: '#FF9A95', fontWeight: '800', marginBottom: 8 }}>Delete Account</Text>
+          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginBottom: 10 }}>
+            This permanently deletes your account and all related data.
+          </Text>
+          <View style={{ gap: 10 }}>
+            <TextInput
+              value={deletePasswordInput}
+              onChangeText={setDeletePasswordInput}
+              secureTextEntry
+              placeholder="Password"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              style={{ borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
+            />
+            <TextInput
+              value={deleteConfirmInput}
+              onChangeText={setDeleteConfirmInput}
+              autoCapitalize="characters"
+              placeholder="Type DELETE to confirm"
+              placeholderTextColor="rgba(255,255,255,0.35)"
+              style={{ borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
+            />
+            <Pressable
+              onPress={deleteAccount}
+              disabled={isDeletingAccount}
+              style={({ pressed }) => ({
+                borderRadius: 12,
+                paddingVertical: 12,
+                backgroundColor: isDeletingAccount ? 'rgba(255,255,255,0.12)' : 'rgba(255,69,58,0.35)',
+                opacity: pressed ? 0.75 : 1,
+              })}>
+              <Text style={{ color: '#FFD0CC', textAlign: 'center', fontWeight: '800' }}>
+                {isDeletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
