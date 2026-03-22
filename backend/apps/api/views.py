@@ -246,6 +246,65 @@ class AuthMeView(APIView):
         )
 
 
+class AuthChangePasswordView(APIView):
+    def post(self, request):
+        current_password = str(request.data.get('current_password') or '')
+        new_password = str(request.data.get('new_password') or '')
+
+        if not current_password or not new_password:
+            return Response(
+                {'status': 'error', 'message': 'current_password and new_password are required.'},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(new_password) < 8:
+            return Response(
+                {'status': 'error', 'message': 'New password must be at least 8 characters.'},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        if not user.check_password(current_password):
+            return Response(
+                {'status': 'error', 'message': 'Current password is incorrect.'},
+                status=http_status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if current_password == new_password:
+            return Response(
+                {'status': 'error', 'message': 'New password must be different from current password.'},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        user.set_password(new_password)
+        user.save(update_fields=['password'])
+
+        Token.objects.filter(user=user).delete()
+        token = Token.objects.create(user=user)
+
+        return Response({'status': 'success', 'token': token.key})
+
+
+class AuthDeleteAccountView(APIView):
+    def post(self, request):
+        password = str(request.data.get('password') or '')
+        if not password:
+            return Response(
+                {'status': 'error', 'message': 'password is required.'},
+                status=http_status.HTTP_400_BAD_REQUEST,
+            )
+
+        user = request.user
+        if not user.check_password(password):
+            return Response(
+                {'status': 'error', 'message': 'Password is incorrect.'},
+                status=http_status.HTTP_401_UNAUTHORIZED,
+            )
+
+        user.delete()
+        return Response({'status': 'success', 'message': 'Account deleted.'})
+
+
 class DashboardTodayView(APIView):
     def get(self, request):
         today = timezone.localdate()
