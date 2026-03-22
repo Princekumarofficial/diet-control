@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 
@@ -70,6 +70,8 @@ export default function ProfileModalScreen() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
 
   const hydrateInputs = useCallback((p: Profile) => {
     setHeightInput(p.height_cm === null ? '' : String(p.height_cm));
@@ -269,6 +271,7 @@ export default function ProfileModalScreen() {
         setCurrentPasswordInput('');
         setNewPasswordInput('');
         setConfirmNewPasswordInput('');
+        setShowChangePasswordModal(false);
         setInfo('Password changed successfully.');
       } else {
         setError(json.status === 'error' ? json.message : 'Failed to change password.');
@@ -511,6 +514,7 @@ export default function ProfileModalScreen() {
           </View>
         ) : null}
 
+        {/* Save Profile Button */}
         <Pressable
           onPress={saveProfile}
           disabled={!canSave}
@@ -523,99 +527,281 @@ export default function ProfileModalScreen() {
           <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '800' }}>{isSaving ? 'Saving...' : 'Save Profile'}</Text>
         </Pressable>
 
-        <Pressable
-          onPress={signOut}
-          style={({ pressed }) => ({
-            borderRadius: 14,
-            paddingVertical: 14,
-            marginTop: 10,
-            backgroundColor: 'rgba(255,69,58,0.16)',
-            opacity: pressed ? 0.75 : 1,
-          })}>
-          <Text style={{ color: '#FF9A95', textAlign: 'center', fontWeight: '800' }}>Sign Out</Text>
-        </Pressable>
+        {/* Account Management Section */}
+        <View style={{ marginTop: 32, gap: 12 }}>
+          {/* Change Password Button */}
+          <Pressable
+            onPress={() => setShowChangePasswordModal(true)}
+            style={({ pressed }) => ({
+              borderRadius: 14,
+              paddingVertical: 14,
+              backgroundColor: 'rgba(10,132,255,0.16)',
+              opacity: pressed ? 0.75 : 1,
+            })}>
+            <Text style={{ color: '#9DD1FF', textAlign: 'center', fontWeight: '800' }}>🔐 Change Password</Text>
+          </Pressable>
 
-        <View style={{ marginTop: 18, borderRadius: 14, padding: 14, backgroundColor: 'rgba(255,255,255,0.05)' }}>
-          <Text style={{ color: '#fff', fontWeight: '800', marginBottom: 8 }}>Change Password</Text>
-          <View style={{ gap: 10 }}>
-            <TextInput
-              value={currentPasswordInput}
-              onChangeText={setCurrentPasswordInput}
-              secureTextEntry
-              placeholder="Current password"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
-            />
-            <TextInput
-              value={newPasswordInput}
-              onChangeText={setNewPasswordInput}
-              secureTextEntry
-              placeholder="New password"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
-            />
-            <TextInput
-              value={confirmNewPasswordInput}
-              onChangeText={setConfirmNewPasswordInput}
-              secureTextEntry
-              placeholder="Confirm new password"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
-            />
-            <Pressable
-              onPress={changePassword}
-              disabled={isChangingPassword}
-              style={({ pressed }) => ({
-                borderRadius: 12,
-                paddingVertical: 12,
-                backgroundColor: isChangingPassword ? 'rgba(255,255,255,0.1)' : 'rgba(10,132,255,0.2)',
-                opacity: pressed ? 0.75 : 1,
-              })}>
-              <Text style={{ color: '#9DD1FF', textAlign: 'center', fontWeight: '800' }}>
-                {isChangingPassword ? 'Updating...' : 'Update Password'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
+          {/* Delete Account Button */}
+          <Pressable
+            onPress={() => setShowDeleteAccountModal(true)}
+            style={({ pressed }) => ({
+              borderRadius: 14,
+              paddingVertical: 14,
+              backgroundColor: 'rgba(255,69,58,0.16)',
+              opacity: pressed ? 0.75 : 1,
+            })}>
+            <Text style={{ color: '#FF9A95', textAlign: 'center', fontWeight: '800' }}>🗑️ Delete Account</Text>
+          </Pressable>
 
-        <View style={{ marginTop: 14, borderRadius: 14, padding: 14, backgroundColor: 'rgba(255,69,58,0.12)', borderWidth: 1, borderColor: 'rgba(255,69,58,0.25)' }}>
-          <Text style={{ color: '#FF9A95', fontWeight: '800', marginBottom: 8 }}>Delete Account</Text>
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, marginBottom: 10 }}>
-            This permanently deletes your account and all related data.
-          </Text>
-          <View style={{ gap: 10 }}>
-            <TextInput
-              value={deletePasswordInput}
-              onChangeText={setDeletePasswordInput}
-              secureTextEntry
-              placeholder="Password"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              style={{ borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
-            />
-            <TextInput
-              value={deleteConfirmInput}
-              onChangeText={setDeleteConfirmInput}
-              autoCapitalize="characters"
-              placeholder="Type DELETE to confirm"
-              placeholderTextColor="rgba(255,255,255,0.35)"
-              style={{ borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.2)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
-            />
-            <Pressable
-              onPress={deleteAccount}
-              disabled={isDeletingAccount}
-              style={({ pressed }) => ({
-                borderRadius: 12,
-                paddingVertical: 12,
-                backgroundColor: isDeletingAccount ? 'rgba(255,255,255,0.12)' : 'rgba(255,69,58,0.35)',
-                opacity: pressed ? 0.75 : 1,
-              })}>
-              <Text style={{ color: '#FFD0CC', textAlign: 'center', fontWeight: '800' }}>
-                {isDeletingAccount ? 'Deleting...' : 'Permanently Delete Account'}
-              </Text>
-            </Pressable>
-          </View>
+          {/* Sign Out Button */}
+          <Pressable
+            onPress={signOut}
+            style={({ pressed }) => ({
+              borderRadius: 14,
+              paddingVertical: 14,
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              opacity: pressed ? 0.75 : 1,
+            })}>
+            <Text style={{ color: 'rgba(255,255,255,0.7)', textAlign: 'center', fontWeight: '800' }}>Sign Out</Text>
+          </Pressable>
         </View>
       </ScrollView>
+
+      {/* Change Password Modal */}
+      <Modal
+        visible={showChangePasswordModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowChangePasswordModal(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}>
+          <View
+            style={{
+              backgroundColor: ShredColors.bg,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingHorizontal: 18,
+              paddingTop: 24,
+              paddingBottom: 32,
+              maxHeight: '80%',
+            }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <Text style={{ color: '#fff', fontSize: 20, fontWeight: '800' }}>Change Password</Text>
+              <Pressable
+                onPress={() => setShowChangePasswordModal(false)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 24 }}>✕</Text>
+              </Pressable>
+            </View>
+
+            <ScrollView style={{ marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+              <View style={{ gap: 12 }}>
+                <View>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>Current Password</Text>
+                  <TextInput
+                    value={currentPasswordInput}
+                    onChangeText={setCurrentPasswordInput}
+                    secureTextEntry
+                    placeholder="Enter current password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      color: '#fff',
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                    }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>New Password</Text>
+                  <TextInput
+                    value={newPasswordInput}
+                    onChangeText={setNewPasswordInput}
+                    secureTextEntry
+                    placeholder="Enter new password (8+ characters)"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      color: '#fff',
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                    }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>Confirm Password</Text>
+                  <TextInput
+                    value={confirmNewPasswordInput}
+                    onChangeText={setConfirmNewPasswordInput}
+                    secureTextEntry
+                    placeholder="Confirm new password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255,255,255,0.08)',
+                      color: '#fff',
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                    }}
+                  />
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={{ gap: 12 }}>
+              <Pressable
+                onPress={changePassword}
+                disabled={isChangingPassword}
+                style={({ pressed }) => ({
+                  borderRadius: 12,
+                  paddingVertical: 13,
+                  backgroundColor: isChangingPassword ? 'rgba(255,255,255,0.1)' : 'rgba(10,132,255,0.2)',
+                  opacity: pressed ? 0.75 : 1,
+                })}>
+                <Text style={{ color: '#9DD1FF', textAlign: 'center', fontWeight: '800' }}>
+                  {isChangingPassword ? 'Updating...' : 'Update Password'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowChangePasswordModal(false)}
+                disabled={isChangingPassword}
+                style={({ pressed }) => ({
+                  borderRadius: 12,
+                  paddingVertical: 13,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  opacity: pressed ? 0.75 : 1,
+                })}>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center', fontWeight: '800' }}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delete Account Modal */}
+      <Modal
+        visible={showDeleteAccountModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowDeleteAccountModal(false)}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            justifyContent: 'flex-end',
+          }}>
+          <View
+            style={{
+              backgroundColor: ShredColors.bg,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              paddingHorizontal: 18,
+              paddingTop: 24,
+              paddingBottom: 32,
+              maxHeight: '80%',
+            }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <Text style={{ color: '#FF9A95', fontSize: 20, fontWeight: '800' }}>Delete Account</Text>
+              <Pressable
+                onPress={() => setShowDeleteAccountModal(false)}
+                style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 24 }}>✕</Text>
+              </Pressable>
+            </View>
+
+            <View style={{ marginBottom: 20 }}>
+              <View style={{ backgroundColor: 'rgba(255,69,58,0.15)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                <Text style={{ color: '#FF9A95', fontSize: 13, fontWeight: '600', lineHeight: 20 }}>
+                  ⚠️ This action is permanent and cannot be undone. All your data, meals, and coaching history will be deleted.
+                </Text>
+              </View>
+            </View>
+
+            <ScrollView style={{ marginBottom: 16 }} showsVerticalScrollIndicator={false}>
+              <View style={{ gap: 12 }}>
+                <View>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>Password</Text>
+                  <TextInput
+                    value={deletePasswordInput}
+                    onChangeText={setDeletePasswordInput}
+                    secureTextEntry
+                    placeholder="Enter your password"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255,69,58,0.1)',
+                      color: '#fff',
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,69,58,0.2)',
+                    }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginBottom: 6 }}>Confirmation</Text>
+                  <TextInput
+                    value={deleteConfirmInput}
+                    onChangeText={setDeleteConfirmInput}
+                    autoCapitalize="characters"
+                    placeholder="Type DELETE to confirm"
+                    placeholderTextColor="rgba(255,255,255,0.35)"
+                    style={{
+                      borderRadius: 12,
+                      backgroundColor: 'rgba(255,69,58,0.1)',
+                      color: deleteConfirmInput === 'DELETE' ? '#9AFAB0' : '#fff',
+                      paddingHorizontal: 12,
+                      paddingVertical: 12,
+                      borderWidth: 1,
+                      borderColor: deleteConfirmInput === 'DELETE' ? 'rgba(50,215,75,0.3)' : 'rgba(255,69,58,0.2)',
+                    }}
+                  />
+                  <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, marginTop: 6 }}>Enter exactly "DELETE" (uppercase)</Text>
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={{ gap: 12 }}>
+              <Pressable
+                onPress={deleteAccount}
+                disabled={isDeletingAccount || deleteConfirmInput !== 'DELETE'}
+                style={({ pressed }) => ({
+                  borderRadius: 12,
+                  paddingVertical: 13,
+                  backgroundColor:
+                    isDeletingAccount || deleteConfirmInput !== 'DELETE' ? 'rgba(255,255,255,0.1)' : 'rgba(255,69,58,0.35)',
+                  opacity: pressed ? 0.75 : 1,
+                })}>
+                <Text style={{ color: deleteConfirmInput === 'DELETE' ? '#FFD0CC' : 'rgba(255,255,255,0.4)', textAlign: 'center', fontWeight: '800' }}>
+                  {isDeletingAccount ? 'Deleting...' : 'Permanently Delete'}
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => setShowDeleteAccountModal(false)}
+                disabled={isDeletingAccount}
+                style={({ pressed }) => ({
+                  borderRadius: 12,
+                  paddingVertical: 13,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  opacity: pressed ? 0.75 : 1,
+                })}>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', textAlign: 'center', fontWeight: '800' }}>Cancel</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
