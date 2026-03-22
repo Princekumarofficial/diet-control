@@ -21,6 +21,8 @@ type Targets = {
   calories_burned_estimate: number;
   calorie_target_kcal: number;
   protein_target_g: number;
+  carbs_target_g: number;
+  fats_target_g: number;
 };
 
 type ProfileResponse =
@@ -212,6 +214,8 @@ export default function ProfileModalScreen() {
             <Text style={{ color: 'rgba(255,255,255,0.75)' }}>Burn: {targets.calories_burned_estimate} kcal</Text>
             <Text style={{ color: 'rgba(255,255,255,0.75)' }}>Target: {targets.calorie_target_kcal} kcal</Text>
             <Text style={{ color: 'rgba(255,255,255,0.75)' }}>Protein: {targets.protein_target_g} g</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.75)' }}>Carbs: {targets.carbs_target_g} g</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.75)' }}>Fats: {targets.fats_target_g} g</Text>
             <Text style={{ color: 'rgba(255,255,255,0.75)' }}>BMR: {targets.bmr_kcal} kcal</Text>
           </View>
         ) : null}

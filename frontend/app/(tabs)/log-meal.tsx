@@ -13,6 +13,7 @@ type AnalyzeResponse =
         calories: number;
         protein_g: number;
         carbs_g: number;
+        fats_g: number;
         meal_summary: string;
         is_high_sodium: boolean;
         is_high_sugar: boolean;
@@ -21,10 +22,13 @@ type AnalyzeResponse =
         total_daily_calories: number;
         total_daily_protein: number;
         total_daily_carbs: number;
+        total_daily_fats: number;
       };
       targets: {
         calorie_target_kcal: number;
         protein_target_g: number;
+        carbs_target_g: number;
+        fats_target_g: number;
       };
     }
   | { status: 'error'; message: string };
@@ -39,6 +43,8 @@ export default function LogMealScreen() {
 
   const calorieTarget = result?.status === 'success' ? result.targets.calorie_target_kcal : 1800;
   const proteinTarget = result?.status === 'success' ? result.targets.protein_target_g : 100;
+  const carbsTarget = result?.status === 'success' ? result.targets.carbs_target_g : 220;
+  const fatsTarget = result?.status === 'success' ? result.targets.fats_target_g : 60;
 
   const canAnalyze = useMemo(() => (Boolean(image) || Boolean(notes.trim())) && !isLoading, [image, notes, isLoading]);
 
@@ -320,7 +326,7 @@ export default function LogMealScreen() {
             <View style={{ borderRadius: 24, marginBottom: 24, paddingHorizontal: 24, paddingVertical: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(50, 215, 75, 0.1)' }}>
               <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: '600', marginBottom: 16 }}>THIS MEAL</Text>
 
-              <View style={{ flexDirection: 'row', gap: 12, marginBottom: 24 }}>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
                 <View style={{ flex: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 20, backgroundColor: 'rgba(10, 132, 255, 0.15)' }}>
                   <Text style={{ color: '#66B2FF', fontSize: 11, fontWeight: '700', marginBottom: 8 }}>CALORIES</Text>
                   <Text style={{ color: '#B3D9FF', fontSize: 32, fontWeight: '800' }}>{result.meal.calories}</Text>
@@ -332,6 +338,10 @@ export default function LogMealScreen() {
                 <View style={{ flex: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 20, backgroundColor: 'rgba(255, 214, 10, 0.15)' }}>
                   <Text style={{ color: '#FFD84D', fontSize: 11, fontWeight: '700', marginBottom: 8 }}>CARBS</Text>
                   <Text style={{ color: '#FFE58C', fontSize: 32, fontWeight: '800' }}>{result.meal.carbs_g}g</Text>
+                </View>
+                <View style={{ flex: 1, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 20, backgroundColor: 'rgba(255, 159, 10, 0.18)' }}>
+                  <Text style={{ color: '#FFD3A4', fontSize: 11, fontWeight: '700', marginBottom: 8 }}>FATS</Text>
+                  <Text style={{ color: '#FFE1BF', fontSize: 32, fontWeight: '800' }}>{result.meal.fats_g}g</Text>
                 </View>
               </View>
 
@@ -399,16 +409,34 @@ export default function LogMealScreen() {
                   <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Carbs</Text>
                   <View>
                     <Text style={{ color: '#ffffff', fontSize: 24, fontWeight: '800' }}>{result.daily_log.total_daily_carbs}g</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'right' }}>/ 220g</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'right' }}>/ {carbsTarget}g</Text>
                   </View>
                 </View>
 
                 <View style={{ height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
                   <View
                     style={{
-                      width: `${Math.min((result.daily_log.total_daily_carbs / 220) * 100, 100)}%`,
+                      width: `${Math.min((result.daily_log.total_daily_carbs / carbsTarget) * 100, 100)}%`,
                       height: '100%',
-                      backgroundColor: result.daily_log.total_daily_carbs > 220 ? '#FF453A' : '#FFD60A',
+                      backgroundColor: result.daily_log.total_daily_carbs > carbsTarget ? '#FF453A' : '#FFD60A',
+                    }}
+                  />
+                </View>
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Text style={{ color: 'rgba(255,255,255,0.7)', fontWeight: '600' }}>Fats</Text>
+                  <View>
+                    <Text style={{ color: '#ffffff', fontSize: 24, fontWeight: '800' }}>{result.daily_log.total_daily_fats}g</Text>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, textAlign: 'right' }}>/ {fatsTarget}g</Text>
+                  </View>
+                </View>
+
+                <View style={{ height: 8, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                  <View
+                    style={{
+                      width: `${Math.min((result.daily_log.total_daily_fats / fatsTarget) * 100, 100)}%`,
+                      height: '100%',
+                      backgroundColor: result.daily_log.total_daily_fats > fatsTarget ? '#FF453A' : '#FF9F0A',
                     }}
                   />
                 </View>

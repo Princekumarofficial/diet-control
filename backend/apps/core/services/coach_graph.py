@@ -9,6 +9,8 @@ from google.genai import types
 from langgraph.graph import END, START, StateGraph
 
 from apps.core.models import CoachMessage, DailyLog
+from apps.core.models import UserProfile
+from apps.core.services.metabolism import calculate_daily_targets
 
 
 COACH_SYSTEM_PROMPT = """You are Project Shred Coach, a practical personal fitness coach.
@@ -19,7 +21,7 @@ Response style rules:
 - Be supportive and direct.
 - Keep response under 180 words.
 - Include exactly 3 bullet action points.
-- If relevant, mention calories/protein/carbs/water/steps targets.
+- If relevant, mention calories/protein/carbs/fats/water/steps targets.
 - Never invent medical diagnoses.
 """
 
@@ -40,6 +42,8 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
 def _build_user_context() -> dict[str, Any]:
     today = timezone.localdate()
     log, _ = DailyLog.objects.get_or_create(date=today)
+    profile = UserProfile.objects.order_by('id').first() or UserProfile.objects.create()
+    targets = calculate_daily_targets(profile=profile, log=log)
 
     recent_logs = list(DailyLog.objects.order_by('-date')[:14])
     recent_meals = list(log.meals.order_by('-timestamp')[:8])
@@ -59,6 +63,7 @@ def _build_user_context() -> dict[str, Any]:
             'calories': log.total_daily_calories,
             'protein_g': log.total_daily_protein,
             'carbs_g': log.total_daily_carbs,
+            'fats_g': log.total_daily_fats,
             'water_ml': log.water_ml,
             'steps_count': log.steps_count,
             'soreness_profile': log.soreness_profile,
@@ -70,9 +75,10 @@ def _build_user_context() -> dict[str, Any]:
             },
         },
         'targets': {
-            'calories_kcal': 1800,
-            'protein_g': 100,
-            'carbs_g': 220,
+            'calories_kcal': targets.calorie_target_kcal,
+            'protein_g': targets.protein_target_g,
+            'carbs_g': targets.carbs_target_g,
+            'fats_g': targets.fats_target_g,
             'water_ml': 3000,
             'steps': 8000,
         },
@@ -83,6 +89,7 @@ def _build_user_context() -> dict[str, Any]:
                 'calories': m.calories,
                 'protein_g': m.protein_g,
                 'carbs_g': m.carbs_g,
+                'fats_g': m.fats_g,
                 'high_sodium': m.is_high_sodium,
                 'high_sugar': m.is_high_sugar,
             }

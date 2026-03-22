@@ -21,7 +21,7 @@ RULES:
 - Flag "is_high_sugar": true FOR sweets or ice cream.
 
 CRITICAL: Return ONLY a valid JSON object matching this schema exactly:
-{{"calories": <integer>, "protein_g": <integer>, "carbs_g": <integer>, "meal_summary": <string>, "is_high_sodium": <boolean>, "is_high_sugar": <boolean>}}
+{{"calories": <integer>, "protein_g": <integer>, "carbs_g": <integer>, "fats_g": <integer>, "meal_summary": <string>, "is_high_sodium": <boolean>, "is_high_sugar": <boolean>}}
 
 meal_summary must be a single line under 90 characters.
 
@@ -44,6 +44,10 @@ MEAL_ANALYSIS_SCHEMA = {
             "type": "integer",
             "description": "Estimated carbohydrates in grams"
         },
+        "fats_g": {
+            "type": "integer",
+            "description": "Estimated fats in grams"
+        },
         "meal_summary": {
             "type": "string",
             "description": "One-line meal summary for history (under 90 chars)"
@@ -57,7 +61,7 @@ MEAL_ANALYSIS_SCHEMA = {
             "description": "Whether the meal is high in sugar"
         }
     },
-    "required": ["calories", "protein_g", "carbs_g", "meal_summary", "is_high_sodium", "is_high_sugar"]
+    "required": ["calories", "protein_g", "carbs_g", "fats_g", "meal_summary", "is_high_sodium", "is_high_sugar"]
 }
 
 
@@ -66,6 +70,7 @@ class MealAnalysis:
     calories: int
     protein_g: int
     carbs_g: int
+    fats_g: int
     meal_summary: str
     is_high_sodium: bool
     is_high_sugar: bool
@@ -117,6 +122,10 @@ def _get_required_field(data: dict, key: str):
             return v
         if key == "carbs_g" and ("carb" in nk or "carbo" in nk):
             return v
+        if key == "fats_g" and "fat" in nk and "g" in nk:
+            return v
+        if key == "fats_g" and "fat" in nk:
+            return v
         if key == "meal_summary" and ("summary" in nk or "headline" in nk):
             return v
 
@@ -162,7 +171,7 @@ def _extract_json(text: str) -> dict:
     normalized = {_norm_key(k): v for k, v in parsed.items()}
 
     # Heuristic remap if Gemini returns weird/quoted keys
-    expected = {"calories", "protein_g", "carbs_g", "meal_summary", "is_high_sodium", "is_high_sugar"}
+    expected = {"calories", "protein_g", "carbs_g", "fats_g", "meal_summary", "is_high_sodium", "is_high_sugar"}
     if not expected.issubset(set(normalized.keys())):
         remapped: dict[str, object] = {}
         for k, v in normalized.items():
@@ -175,6 +184,8 @@ def _extract_json(text: str) -> dict:
                 remapped["protein_g"] = v
             elif "carb" in lk:
                 remapped["carbs_g"] = v
+            elif "fat" in lk:
+                remapped["fats_g"] = v
             elif "summary" in lk:
                 remapped["meal_summary"] = v
             elif ("sodium" in lk or "salt" in lk) and "high" in lk:
@@ -239,21 +250,23 @@ def analyze_meal_image(*, image_bytes: bytes, mime_type: str, user_notes: str) -
     calories = int(_get_required_field(data, "calories"))
     protein_g = int(_get_required_field(data, "protein_g"))
     carbs_g = int(_get_required_field(data, "carbs_g"))
+    fats_g = int(_get_required_field(data, "fats_g"))
     is_high_sodium = bool(_get_required_field(data, "is_high_sodium"))
     is_high_sugar = bool(_get_required_field(data, "is_high_sugar"))
 
     try:
         meal_summary = str(_get_required_field(data, "meal_summary")).strip()
     except KeyError:
-        meal_summary = f"Meal estimate: {calories} kcal, {protein_g}g protein, {carbs_g}g carbs"
+        meal_summary = f"Meal estimate: {calories} kcal, P{protein_g} C{carbs_g} F{fats_g}"
 
     if not meal_summary:
-        meal_summary = f"Meal estimate: {calories} kcal, {protein_g}g protein, {carbs_g}g carbs"
+        meal_summary = f"Meal estimate: {calories} kcal, P{protein_g} C{carbs_g} F{fats_g}"
 
     return MealAnalysis(
         calories=calories,
         protein_g=protein_g,
         carbs_g=carbs_g,
+        fats_g=fats_g,
         meal_summary=meal_summary[:140],
         is_high_sodium=is_high_sodium,
         is_high_sugar=is_high_sugar,
@@ -293,21 +306,23 @@ def analyze_meal_text(*, raw_input_text: str, user_notes: str) -> MealAnalysis:
     calories = int(_get_required_field(data, "calories"))
     protein_g = int(_get_required_field(data, "protein_g"))
     carbs_g = int(_get_required_field(data, "carbs_g"))
+    fats_g = int(_get_required_field(data, "fats_g"))
     is_high_sodium = bool(_get_required_field(data, "is_high_sodium"))
     is_high_sugar = bool(_get_required_field(data, "is_high_sugar"))
 
     try:
         meal_summary = str(_get_required_field(data, "meal_summary")).strip()
     except KeyError:
-        meal_summary = f"Meal estimate: {calories} kcal, {protein_g}g protein, {carbs_g}g carbs"
+        meal_summary = f"Meal estimate: {calories} kcal, P{protein_g} C{carbs_g} F{fats_g}"
 
     if not meal_summary:
-        meal_summary = f"Meal estimate: {calories} kcal, {protein_g}g protein, {carbs_g}g carbs"
+        meal_summary = f"Meal estimate: {calories} kcal, P{protein_g} C{carbs_g} F{fats_g}"
 
     return MealAnalysis(
         calories=calories,
         protein_g=protein_g,
         carbs_g=carbs_g,
+        fats_g=fats_g,
         meal_summary=meal_summary[:140],
         is_high_sodium=is_high_sodium,
         is_high_sugar=is_high_sugar,

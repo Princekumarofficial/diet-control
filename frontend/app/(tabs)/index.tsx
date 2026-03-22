@@ -21,6 +21,8 @@ type DailyLog = {
   took_fish_oil: boolean;
   total_daily_calories: number;
   total_daily_protein: number;
+  total_daily_carbs: number;
+  total_daily_fats: number;
 };
 
 type MetabolicTargets = {
@@ -28,6 +30,8 @@ type MetabolicTargets = {
   calories_burned_estimate: number;
   calorie_target_kcal: number;
   protein_target_g: number;
+  carbs_target_g: number;
+  fats_target_g: number;
 };
 
 type DamageControl = {
@@ -230,8 +234,12 @@ export default function DashboardScreen() {
 
   const calories = dailyLog?.total_daily_calories ?? 0;
   const protein = dailyLog?.total_daily_protein ?? 0;
+  const carbs = dailyLog?.total_daily_carbs ?? 0;
+  const fats = dailyLog?.total_daily_fats ?? 0;
   const calorieTarget = targets?.calorie_target_kcal ?? 1800;
   const proteinTarget = targets?.protein_target_g ?? 100;
+  const carbsTarget = targets?.carbs_target_g ?? 220;
+  const fatsTarget = targets?.fats_target_g ?? 60;
 
   const actions = useMemo(() => {
     if (!dailyLog) return [] as { title: string; tone: 'warn' | 'good' | 'info'; detail: string }[];
@@ -390,6 +398,19 @@ export default function DashboardScreen() {
                   <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>/ {proteinTarget}g</Text>
                 </View>
                 <Text style={{ color: 'rgba(255,255,255,0.7)', marginTop: 12, fontSize: 12 }}>Protein</Text>
+              </View>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+              <View style={{ flex: 1, borderRadius: 16, padding: 12, backgroundColor: 'rgba(255,214,10,0.15)' }}>
+                <Text style={{ color: '#FFE58C', fontSize: 11, fontWeight: '700', marginBottom: 4 }}>CARBS</Text>
+                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '800' }}>{carbs}g</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Target: {carbsTarget}g</Text>
+              </View>
+              <View style={{ flex: 1, borderRadius: 16, padding: 12, backgroundColor: 'rgba(255,159,10,0.16)' }}>
+                <Text style={{ color: '#FFD3A4', fontSize: 11, fontWeight: '700', marginBottom: 4 }}>FATS</Text>
+                <Text style={{ color: '#ffffff', fontSize: 18, fontWeight: '800' }}>{fats}g</Text>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Target: {fatsTarget}g</Text>
               </View>
             </View>
 

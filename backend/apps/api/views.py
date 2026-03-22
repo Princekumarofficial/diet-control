@@ -47,6 +47,8 @@ def _targets_payload(profile: UserProfile, log: DailyLog):
         "calories_burned_estimate": targets.calories_burned_estimate,
         "calorie_target_kcal": targets.calorie_target_kcal,
         "protein_target_g": targets.protein_target_g,
+        "carbs_target_g": targets.carbs_target_g,
+        "fats_target_g": targets.fats_target_g,
     }
 
 
@@ -68,6 +70,7 @@ def _daily_log_payload(log: DailyLog):
         "total_daily_calories": log.total_daily_calories,
         "total_daily_protein": log.total_daily_protein,
         "total_daily_carbs": log.total_daily_carbs,
+        "total_daily_fats": log.total_daily_fats,
     }
 
 
@@ -193,6 +196,7 @@ class MealAnalyzeView(APIView):
                 calories=analysis.calories,
                 protein_g=analysis.protein_g,
                 carbs_g=analysis.carbs_g,
+                fats_g=analysis.fats_g,
                 meal_summary=analysis.meal_summary,
                 is_high_sodium=analysis.is_high_sodium,
                 is_high_sugar=analysis.is_high_sugar,
@@ -206,6 +210,7 @@ class MealAnalyzeView(APIView):
                         "calories": meal.calories,
                         "protein_g": meal.protein_g,
                         "carbs_g": meal.carbs_g,
+                        "fats_g": meal.fats_g,
                         "meal_summary": meal.meal_summary,
                         "is_high_sodium": meal.is_high_sodium,
                         "is_high_sugar": meal.is_high_sugar,
@@ -295,6 +300,7 @@ class WeeklyChartsView(APIView):
                     "calories": log.total_daily_calories if log else 0,
                     "protein_g": log.total_daily_protein if log else 0,
                     "carbs_g": log.total_daily_carbs if log else 0,
+                    "fats_g": log.total_daily_fats if log else 0,
                     "weight_kg": float(log.weight_kg) if (log and log.weight_kg is not None) else None,
                 }
             )
@@ -334,6 +340,7 @@ class MealHistoryView(APIView):
                 "calories": meal.calories,
                 "protein_g": meal.protein_g,
                 "carbs_g": meal.carbs_g,
+                "fats_g": meal.fats_g,
                 "meal_summary": meal.meal_summary,
                 "is_high_sodium": meal.is_high_sodium,
                 "is_high_sugar": meal.is_high_sugar,

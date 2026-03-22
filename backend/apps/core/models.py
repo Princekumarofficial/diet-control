@@ -35,6 +35,10 @@ class DailyLog(models.Model):
     def total_daily_carbs(self):
         return sum(meal.carbs_g for meal in self.meals.all())
 
+    @property
+    def total_daily_fats(self):
+        return sum(meal.fats_g for meal in self.meals.all())
+
 
 class MealEntry(models.Model):
     daily_log = models.ForeignKey(DailyLog, related_name='meals', on_delete=models.CASCADE)
@@ -47,6 +51,7 @@ class MealEntry(models.Model):
     calories = models.IntegerField(default=0)
     protein_g = models.IntegerField(default=0)
     carbs_g = models.IntegerField(default=0)
+    fats_g = models.IntegerField(default=0)
     meal_summary = models.CharField(max_length=140, blank=True)
     is_high_sodium = models.BooleanField(default=False)
     is_high_sugar = models.BooleanField(default=False)

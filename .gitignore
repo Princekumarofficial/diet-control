@@ -35,3 +35,6 @@ backend/nginx/certs/*.pfx
 # OS
 .DS_Store
 Thumbs.db
+
+# Personal files
+TODO.md

@@ -20,6 +20,8 @@ class DailyTargets:
     calories_burned_estimate: int
     calorie_target_kcal: int
     protein_target_g: int
+    carbs_target_g: int
+    fats_target_g: int
 
 
 def _mifflin_bmr(*, sex: str, weight_kg: float, height_cm: float, age_years: int) -> float:
@@ -79,9 +81,29 @@ def calculate_daily_targets(*, profile: UserProfile, log: DailyLog) -> DailyTarg
     else:
         protein_target_g = 100
 
+    if profile.goal == UserProfile.GOAL_GAIN:
+        fat_ratio = 0.30
+    elif profile.goal == UserProfile.GOAL_MAINTAIN:
+        fat_ratio = 0.27
+    else:
+        fat_ratio = 0.25
+
+    fats_target_g = int(round(max(40.0, (calorie_target_kcal * fat_ratio) / 9.0)))
+    remaining_for_carbs = calorie_target_kcal - (protein_target_g * 4) - (fats_target_g * 9)
+
+    # Keep carbs from collapsing too low while preserving calorie consistency.
+    min_carbs_g = 80
+    if remaining_for_carbs < (min_carbs_g * 4):
+        fats_target_g = int(round(max(35.0, (calorie_target_kcal - (protein_target_g * 4) - (min_carbs_g * 4)) / 9.0)))
+        remaining_for_carbs = calorie_target_kcal - (protein_target_g * 4) - (fats_target_g * 9)
+
+    carbs_target_g = int(round(max(float(min_carbs_g), remaining_for_carbs / 4.0)))
+
     return DailyTargets(
         bmr_kcal=int(round(bmr)),
         calories_burned_estimate=calories_burned_estimate,
         calorie_target_kcal=int(round(calorie_target_kcal)),
         protein_target_g=protein_target_g,
+        carbs_target_g=carbs_target_g,
+        fats_target_g=fats_target_g,
     )

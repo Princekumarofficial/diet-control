@@ -13,6 +13,7 @@ class MealEntryInline(admin.TabularInline):
 		'calories',
 		'protein_g',
 		'carbs_g',
+		'fats_g',
 		'is_high_sodium',
 		'is_high_sugar',
 	)
@@ -31,6 +32,7 @@ class DailyLogAdmin(admin.ModelAdmin):
 		'total_calories_display',
 		'total_protein_display',
 		'total_carbs_display',
+		'total_fats_display',
 		'meal_count_display',
 		'is_rest_day',
 	)
@@ -60,13 +62,22 @@ class DailyLogAdmin(admin.ModelAdmin):
 		),
 		(
 			'Computed Totals',
-			{'fields': ('total_calories_display', 'total_protein_display', 'total_carbs_display', 'meal_count_display')},
+			{
+				'fields': (
+					'total_calories_display',
+					'total_protein_display',
+					'total_carbs_display',
+					'total_fats_display',
+					'meal_count_display',
+				)
+			},
 		),
 	)
 	readonly_fields = (
 		'total_calories_display',
 		'total_protein_display',
 		'total_carbs_display',
+		'total_fats_display',
 		'meal_count_display',
 	)
 
@@ -81,6 +92,10 @@ class DailyLogAdmin(admin.ModelAdmin):
 	@admin.display(description='Total Carbs (g)')
 	def total_carbs_display(self, obj: DailyLog):
 		return obj.total_daily_carbs
+
+	@admin.display(description='Total Fats (g)')
+	def total_fats_display(self, obj: DailyLog):
+		return obj.total_daily_fats
 
 	@admin.display(description='Meals')
 	def meal_count_display(self, obj: DailyLog):
@@ -99,6 +114,7 @@ class MealEntryAdmin(admin.ModelAdmin):
 		'calories',
 		'protein_g',
 		'carbs_g',
+		'fats_g',
 		'is_high_sodium',
 		'is_high_sugar',
 	)
