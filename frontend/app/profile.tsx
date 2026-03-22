@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { router } from 'expo-router';
 
 import { apiFetch } from '@/src/api/client';
+import { useAuth } from '@/src/context/auth';
 import { ShredColors } from '@/src/constants/theme';
 
 type Profile = {
   id: number;
+  username: string;
+  email: string;
   sex: 'male' | 'female' | 'other';
   age_years: number;
   height_cm: number | null;
@@ -14,6 +18,8 @@ type Profile = {
   activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'athlete';
   goal: 'cut' | 'maintain' | 'gain';
   target_deficit_kcal: number;
+  has_gemini_key: boolean;
+  gemini_key_last4: string | null;
 };
 
 type Targets = {
@@ -34,6 +40,7 @@ type BodyFatEstimateResponse =
   | { status: 'error'; message: string };
 
 export default function ProfileModalScreen() {
+  const { logout } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [targets, setTargets] = useState<Targets | null>(null);
 
@@ -41,6 +48,7 @@ export default function ProfileModalScreen() {
   const [bodyFatInput, setBodyFatInput] = useState('');
   const [ageInput, setAgeInput] = useState('22');
   const [deficitInput, setDeficitInput] = useState('400');
+  const [geminiKeyInput, setGeminiKeyInput] = useState('');
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,6 +60,7 @@ export default function ProfileModalScreen() {
     setBodyFatInput(p.body_fat_percent === null ? '' : String(p.body_fat_percent));
     setAgeInput(String(p.age_years));
     setDeficitInput(String(p.target_deficit_kcal));
+    setGeminiKeyInput('');
   }, []);
 
   const loadProfile = useCallback(async () => {
@@ -116,6 +125,7 @@ export default function ProfileModalScreen() {
         activity_level: profile.activity_level,
         goal: profile.goal,
         target_deficit_kcal: Math.round(deficitValue),
+        ...(geminiKeyInput.trim() ? { gemini_api_key: geminiKeyInput.trim() } : {}),
       };
 
       const res = await apiFetch('/api/v1/profile/', {
@@ -192,6 +202,16 @@ export default function ProfileModalScreen() {
     }
   }
 
+  async function signOut() {
+    try {
+      await apiFetch('/api/v1/auth/logout/', { method: 'POST' });
+    } catch {
+      // Ignore API errors on logout and clear local auth anyway.
+    }
+    logout();
+    router.replace('/auth');
+  }
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: ShredColors.bg }}
@@ -201,6 +221,13 @@ export default function ProfileModalScreen() {
         <Text style={{ color: 'rgba(255,255,255,0.65)', marginBottom: 20 }}>
           We use this to compute daily burn, calorie target, and macro targets.
         </Text>
+
+        {profile ? (
+          <View style={{ borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 14, backgroundColor: 'rgba(255,255,255,0.06)' }}>
+            <Text style={{ color: '#fff', fontWeight: '700' }}>@{profile.username}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{profile.email || 'No email set'}</Text>
+          </View>
+        ) : null}
 
         {isLoading ? (
           <View style={{ paddingVertical: 30, alignItems: 'center' }}>
@@ -354,6 +381,19 @@ export default function ProfileModalScreen() {
           <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>Only used when goal is CUT.</Text>
         </View>
 
+        <View style={{ gap: 10, marginBottom: 26 }}>
+          <Text style={{ color: 'rgba(255,255,255,0.85)', fontWeight: '600' }}>Gemini API Key</Text>
+          <TextInput
+            value={geminiKeyInput}
+            onChangeText={setGeminiKeyInput}
+            autoCapitalize="none"
+            placeholder={profile?.has_gemini_key ? `Saved key ending in ${profile.gemini_key_last4 ?? '****'} (enter to replace)` : 'Enter your Gemini API key'}
+            placeholderTextColor="rgba(255,255,255,0.35)"
+            style={{ borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.08)', color: '#fff', paddingHorizontal: 12, paddingVertical: 12 }}
+          />
+          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12 }}>A valid key is required for meal analysis, coach chat, and body fat estimate.</Text>
+        </View>
+
         {error ? (
           <View style={{ borderRadius: 12, padding: 12, marginBottom: 14, backgroundColor: 'rgba(255,69,58,0.14)' }}>
             <Text style={{ color: '#FF9A95' }}>{error}</Text>
@@ -370,6 +410,18 @@ export default function ProfileModalScreen() {
             opacity: pressed ? 0.75 : 1,
           })}>
           <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '800' }}>{isSaving ? 'Saving...' : 'Save Profile'}</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={signOut}
+          style={({ pressed }) => ({
+            borderRadius: 14,
+            paddingVertical: 14,
+            marginTop: 10,
+            backgroundColor: 'rgba(255,69,58,0.16)',
+            opacity: pressed ? 0.75 : 1,
+          })}>
+          <Text style={{ color: '#FF9A95', textAlign: 'center', fontWeight: '800' }}>Sign Out</Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>

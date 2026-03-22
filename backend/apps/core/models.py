@@ -1,9 +1,11 @@
 from django.db import models
+from django.conf import settings
 from django.utils import timezone
 
 
 class DailyLog(models.Model):
-    date = models.DateField(unique=True, default=timezone.now)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='daily_logs', on_delete=models.CASCADE)
+    date = models.DateField(default=timezone.now)
     weight_kg = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
 
     # Activity & Posture
@@ -39,6 +41,12 @@ class DailyLog(models.Model):
     def total_daily_fats(self):
         return sum(meal.fats_g for meal in self.meals.all())
 
+    class Meta:
+        ordering = ['-date']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'date'], name='unique_daily_log_per_user_date'),
+        ]
+
 
 class MealEntry(models.Model):
     daily_log = models.ForeignKey(DailyLog, related_name='meals', on_delete=models.CASCADE)
@@ -65,6 +73,7 @@ class CoachMessage(models.Model):
         (ROLE_ASSISTANT, 'Assistant'),
     )
 
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='coach_messages', on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -108,6 +117,8 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='profile', on_delete=models.CASCADE)
+
     age_years = models.PositiveSmallIntegerField(default=22)
     sex = models.CharField(max_length=10, choices=SEX_CHOICES, default=SEX_MALE)
     height_cm = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
@@ -116,9 +127,10 @@ class UserProfile(models.Model):
     activity_level = models.CharField(max_length=12, choices=ACTIVITY_CHOICES, default=ACTIVITY_MODERATE)
     goal = models.CharField(max_length=10, choices=GOAL_CHOICES, default=GOAL_CUT)
     target_deficit_kcal = models.IntegerField(default=400)
+    gemini_api_key = models.CharField(max_length=256, blank=True, default='')
 
     class Meta:
-        ordering = ['id']
+        ordering = ['user_id']
 
     def __str__(self):
-        return f"UserProfile #{self.id}"
+        return f"UserProfile @{self.user.username}"

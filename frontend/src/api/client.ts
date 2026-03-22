@@ -28,6 +28,15 @@ function buildBaseUrls() {
 }
 
 const baseUrls = buildBaseUrls();
+let authToken: string | null = null;
+
+export function setApiAuthToken(token: string | null) {
+  authToken = token?.trim() ? token.trim() : null;
+}
+
+export function getApiAuthToken() {
+  return authToken;
+}
 
 export function apiUrl(path: string, baseUrl = baseUrls[0]) {
   if (!baseUrl) {
@@ -38,6 +47,35 @@ export function apiUrl(path: string, baseUrl = baseUrls[0]) {
 }
 
 export async function apiFetch(path: string, init?: RequestInit) {
+  if (!baseUrls.length) {
+    throw new Error('Missing EXPO_PUBLIC_API_URL for release build. Set it in EAS build profile env.');
+  }
+
+  let lastError: unknown = null;
+
+  for (let index = 0; index < baseUrls.length; index += 1) {
+    const baseUrl = baseUrls[index];
+    try {
+      const headers = new Headers(init?.headers ?? {});
+      if (authToken) {
+        headers.set('Authorization', `Token ${authToken}`);
+      }
+      const res = await fetch(apiUrl(path, baseUrl), { ...init, headers });
+      return res;
+    } catch (error) {
+      lastError = error;
+      const isLastAttempt = index === baseUrls.length - 1;
+      console.error(`[API Error] ${path} via ${baseUrl}:`, error);
+      if (isLastAttempt) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError ?? new Error(`Failed to fetch ${path}`);
+}
+
+export async function apiFetchPublic(path: string, init?: RequestInit) {
   if (!baseUrls.length) {
     throw new Error('Missing EXPO_PUBLIC_API_URL for release build. Set it in EAS build profile env.');
   }

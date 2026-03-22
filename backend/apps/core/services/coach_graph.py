@@ -1,8 +1,7 @@
 import json
-import os
-from datetime import timedelta
 from typing import Any, TypedDict
 
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from google import genai
 from google.genai import types
@@ -27,6 +26,8 @@ Response style rules:
 
 
 class CoachState(TypedDict, total=False):
+    user_id: int
+    gemini_api_key: str
     user_message: str
     context_json: str
     reply: str
@@ -39,13 +40,13 @@ def _safe_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
-def _build_user_context() -> dict[str, Any]:
+def _build_user_context(user) -> dict[str, Any]:
     today = timezone.localdate()
-    log, _ = DailyLog.objects.get_or_create(date=today)
-    profile = UserProfile.objects.order_by('id').first() or UserProfile.objects.create()
+    log, _ = DailyLog.objects.get_or_create(user=user, date=today)
+    profile = UserProfile.objects.filter(user=user).first() or UserProfile.objects.create(user=user)
     targets = calculate_daily_targets(profile=profile, log=log)
 
-    recent_logs = list(DailyLog.objects.order_by('-date')[:14])
+    recent_logs = list(DailyLog.objects.filter(user=user).order_by('-date')[:14])
     recent_meals = list(log.meals.order_by('-timestamp')[:8])
 
     avg_steps_7d = 0
@@ -53,7 +54,7 @@ def _build_user_context() -> dict[str, Any]:
         last_7 = recent_logs[:7]
         avg_steps_7d = sum(l.steps_count for l in last_7) / max(1, len(last_7))
 
-    history = list(CoachMessage.objects.order_by('-created_at')[:8])
+    history = list(CoachMessage.objects.filter(user=user).order_by('-created_at')[:8])
     history.reverse()
 
     return {
@@ -104,14 +105,19 @@ def _build_user_context() -> dict[str, Any]:
 
 
 def _collect_context_node(state: CoachState) -> CoachState:
-    context = _build_user_context()
+    user_id = state.get('user_id')
+    if not user_id:
+        raise RuntimeError('Missing user context for coach chat.')
+    User = get_user_model()
+    user = User.objects.get(id=user_id)
+    context = _build_user_context(user)
     return {'context_json': json.dumps(context, default=str)}
 
 
 def _coach_reply_node(state: CoachState) -> CoachState:
-    api_key = os.getenv('GEMINI_API_KEY', '')
+    api_key = (state.get('gemini_api_key') or '').strip()
     if not api_key:
-        raise RuntimeError('Missing GEMINI_API_KEY in environment.')
+        raise RuntimeError('Missing Gemini API key for user profile.')
 
     user_message = (state.get('user_message') or '').strip()
     context_json = state.get('context_json') or '{}'
@@ -158,14 +164,20 @@ def _build_graph():
 COACH_GRAPH = _build_graph()
 
 
-def run_coach_chat(user_message: str) -> dict[str, Any]:
+def run_coach_chat(*, user, user_message: str, gemini_api_key: str) -> dict[str, Any]:
     if not (user_message or '').strip():
         raise ValueError('Message is required.')
 
-    state = COACH_GRAPH.invoke({'user_message': user_message})
+    state = COACH_GRAPH.invoke(
+        {
+            'user_id': user.id,
+            'user_message': user_message,
+            'gemini_api_key': gemini_api_key,
+        }
+    )
     reply = (state.get('reply') or '').strip()
 
-    CoachMessage.objects.create(role=CoachMessage.ROLE_USER, content=user_message.strip())
-    CoachMessage.objects.create(role=CoachMessage.ROLE_ASSISTANT, content=reply)
+    CoachMessage.objects.create(user=user, role=CoachMessage.ROLE_USER, content=user_message.strip())
+    CoachMessage.objects.create(user=user, role=CoachMessage.ROLE_ASSISTANT, content=reply)
 
     return {'reply': reply}

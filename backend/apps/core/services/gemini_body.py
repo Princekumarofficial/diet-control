@@ -1,5 +1,3 @@
-import os
-
 from google import genai
 from google.genai import types
 
@@ -13,10 +11,9 @@ No markdown, no explanation, no additional keys.
 """
 
 
-def estimate_body_fat_percent(*, image_bytes: bytes, mime_type: str) -> float:
-    api_key = os.getenv("GEMINI_API_KEY", "")
+def estimate_body_fat_percent(*, image_bytes: bytes, mime_type: str, api_key: str) -> float:
     if not api_key:
-        raise RuntimeError("Missing GEMINI_API_KEY in environment.")
+        raise RuntimeError("Missing Gemini API key for user profile.")
 
     client = genai.Client(api_key=api_key)
     resp = client.models.generate_content(

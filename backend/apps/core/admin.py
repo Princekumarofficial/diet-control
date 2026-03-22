@@ -25,6 +25,7 @@ class MealEntryInline(admin.TabularInline):
 class DailyLogAdmin(admin.ModelAdmin):
 	date_hierarchy = 'date'
 	list_display = (
+		'user',
 		'date',
 		'weight_kg',
 		'steps_count',
@@ -37,6 +38,7 @@ class DailyLogAdmin(admin.ModelAdmin):
 		'is_rest_day',
 	)
 	list_filter = (
+		'user',
 		'is_rest_day',
 		'apt_correctives_done',
 		'took_multivitamin',
@@ -107,8 +109,8 @@ class MealEntryAdmin(admin.ModelAdmin):
 	date_hierarchy = 'timestamp'
 	list_display = (
 		'id',
-		'timestamp',
 		'daily_log',
+		'timestamp',
 		'meal_type',
 		'meal_summary',
 		'calories',
@@ -127,7 +129,7 @@ class MealEntryAdmin(admin.ModelAdmin):
 @admin.register(CoachMessage)
 class CoachMessageAdmin(admin.ModelAdmin):
 	date_hierarchy = 'created_at'
-	list_display = ('created_at', 'role', 'short_content')
+	list_display = ('created_at', 'user', 'role', 'short_content')
 	list_filter = ('role', 'created_at')
 	search_fields = ('content',)
 	readonly_fields = ('created_at',)
@@ -143,6 +145,7 @@ class CoachMessageAdmin(admin.ModelAdmin):
 class UserProfileAdmin(admin.ModelAdmin):
 	list_display = (
 		'id',
+		'user',
 		'sex',
 		'age_years',
 		'height_cm',
@@ -155,6 +158,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 	list_filter = ('sex', 'activity_level', 'goal')
 	readonly_fields = ('created_at', 'updated_at')
 	fieldsets = (
+		('Account', {'fields': ('user', 'gemini_api_key')}),
 		('Body Metrics', {'fields': ('sex', 'age_years', 'height_cm', 'body_fat_percent')}),
 		('Planning', {'fields': ('activity_level', 'goal', 'target_deficit_kcal')}),
 		('Metadata', {'fields': ('created_at', 'updated_at')}),

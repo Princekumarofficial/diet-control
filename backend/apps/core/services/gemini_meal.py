@@ -202,10 +202,9 @@ def _extract_json(text: str) -> dict:
     return normalized
 
 
-def analyze_meal_image(*, image_bytes: bytes, mime_type: str, user_notes: str) -> MealAnalysis:
-    api_key = os.getenv("GEMINI_API_KEY", "")
+def analyze_meal_image(*, image_bytes: bytes, mime_type: str, user_notes: str, api_key: str) -> MealAnalysis:
     if not api_key:
-        raise RuntimeError("Missing GEMINI_API_KEY in environment.")
+        raise RuntimeError("Missing Gemini API key for user profile.")
 
     client = genai.Client(api_key=api_key)
 
@@ -273,10 +272,9 @@ def analyze_meal_image(*, image_bytes: bytes, mime_type: str, user_notes: str) -
     )
 
 
-def analyze_meal_text(*, raw_input_text: str, user_notes: str) -> MealAnalysis:
-    api_key = os.getenv("GEMINI_API_KEY", "")
+def analyze_meal_text(*, raw_input_text: str, user_notes: str, api_key: str) -> MealAnalysis:
     if not api_key:
-        raise RuntimeError("Missing GEMINI_API_KEY in environment.")
+        raise RuntimeError("Missing Gemini API key for user profile.")
 
     meal_text = (raw_input_text or "").strip()
     if not meal_text:

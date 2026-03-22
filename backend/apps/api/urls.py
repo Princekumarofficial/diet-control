@@ -1,6 +1,10 @@
 from django.urls import path
 
 from .views import (
+    AuthLoginView,
+    AuthLogoutView,
+    AuthMeView,
+    AuthRegisterView,
     CoachChatView,
     CoachHistoryView,
     DashboardTodayView,
@@ -14,6 +18,10 @@ from .views import (
 )
 
 urlpatterns = [
+    path("auth/register/", AuthRegisterView.as_view()),
+    path("auth/login/", AuthLoginView.as_view()),
+    path("auth/logout/", AuthLogoutView.as_view()),
+    path("auth/me/", AuthMeView.as_view()),
     path("dashboard/today/", DashboardTodayView.as_view()),
     path("coach/chat/", CoachChatView.as_view()),
     path("coach/history/", CoachHistoryView.as_view()),
