@@ -17,7 +17,7 @@ type AuthResponse =
   | { status: 'error'; message: string };
 
 export default function AuthScreen() {
-  const { isAuthenticated, setToken } = useAuth();
+  const { isAuthenticated, isAuthLoading, setToken } = useAuth();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -25,6 +25,15 @@ export default function AuthScreen() {
   const [geminiKey, setGeminiKey] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  if (isAuthLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: ShredColors.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={ShredColors.blue} size="large" />
+        <Text style={{ color: 'rgba(255,255,255,0.6)', marginTop: 12 }}>Restoring session...</Text>
+      </View>
+    );
+  }
 
   if (isAuthenticated) {
     return <Redirect href="/(tabs)" />;
